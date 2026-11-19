@@ -1,0 +1,3 @@
+import fs from 'node:fs';
+const html=fs.readFileSync('dist/index.html','utf8');const assets={};for(const file of fs.readdirSync('dist/assets'))assets['/assets/'+file]={body:fs.readFileSync('dist/assets/'+file,'utf8'),type:file.endsWith('.css')?'text/css':'text/javascript'};
+const worker=fs.readFileSync('worker.js','utf8').replace('/*HTML*/null',JSON.stringify(html)).replace('/*ASSETS*/null',JSON.stringify(assets));fs.mkdirSync('dist/server',{recursive:true});fs.writeFileSync('dist/server/index.js',worker);fs.mkdirSync('dist/.openai',{recursive:true});fs.copyFileSync('.openai/hosting.json','dist/.openai/hosting.json');
