@@ -52,7 +52,7 @@ class DeploymentTests(unittest.TestCase):
             module.upload(ftp, [])
         self.assertEqual(ftp.writes, [])
     def test_secrets_and_sql_are_rejected(self):
-        for name in ['config.php', 'data.sql', 'assets/data.sql']:
+        for name in ['config.php', 'smtp-config.php', 'data.sql', 'assets/data.sql']:
             with tempfile.TemporaryDirectory() as folder:
                 root = Path(folder)
                 self.artifact(root)

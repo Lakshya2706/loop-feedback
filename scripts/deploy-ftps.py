@@ -9,7 +9,8 @@ import ssl
 import uuid
 
 ROOT = Path('dist')
-ALLOWED = {'index.html', 'api.php', '.htaccess', '.user.ini'}
+LIBRARY = {'lib/PHPMailer/'+name for name in ['PHPMailer.php','SMTP.php','Exception.php','LICENSE','VERSION']}
+ALLOWED = {'index.html', 'api.php', 'notifications.php', 'smtp-config.example.php', '.htaccess', '.user.ini'}
 
 
 def deploy_files(root):
@@ -20,13 +21,13 @@ def deploy_files(root):
         if not path.is_file():
             continue
         rel = path.relative_to(root).as_posix()
-        if rel not in ALLOWED and not (rel.startswith('assets/') and path.suffix in {'.js', '.css'}):
+        if rel not in ALLOWED and rel not in LIBRARY and not (rel.startswith('assets/') and path.suffix in {'.js', '.css'}):
             raise ValueError(f'Unexpected deployment file: {rel}')
         files.append((path, rel))
     if not ALLOWED.issubset({rel for _, rel in files}):
         raise ValueError('Required deployment files are missing.')
     # Publish the HTML entrypoint last, after its hashed assets exist.
-    return sorted(files, key=lambda pair: pair[1] == 'index.html')
+    return sorted(files, key=lambda pair: 2 if pair[1] == 'index.html' else 1 if pair[1] == 'api.php' else 0)
 
 
 def upload(ftp, files):
@@ -37,7 +38,18 @@ def upload(ftp, files):
         raise RuntimeError('FTP account root must be the existing configured Loop folder.')
     if 'assets' not in existing:
         ftp.mkd('assets')
+    created = {'assets'}
     for path, rel in files:
+        for parent in reversed(Path(rel).parents):
+            directory = parent.as_posix()
+            if directory == '.' or directory in created:
+                continue
+            try:
+                ftp.mkd(directory)
+            except ftplib.error_perm:
+                ftp.cwd('/' + directory)
+                ftp.cwd('/')
+            created.add(directory)
         temporary = rel + '.deploy-' + uuid.uuid4().hex + '.tmp'
         try:
             with path.open('rb') as source:

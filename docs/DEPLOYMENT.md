@@ -39,3 +39,15 @@ Future pushes to `main` trigger the same pipeline. To stop deployment, disable t
 - Workflow concurrency prevents overlapping production deployments.
 
 Keep a backup of the database and server configuration. Restoring application code does not restore data. Future database changes must use an explicitly reviewed migration compatible with the deployed code.
+
+## Assignment emails (optional one-time setup)
+
+The deployment includes `smtp-config.example.php`. In cPanel File Manager, rename it to `smtp-config.php` and enter the mailbox password privately in that file. This is separate from the database `config.php`; do not replace the database configuration.
+
+The supplied settings use sender/SMTP username `lakshya.j@senzitlabs.com`, SMTP server `senzitlabs.com`, implicit SSL/TLS on port 465, and the production app URL. Save the real configuration only on the hosting server. It is ignored by Git, blocked by Apache, and never included in deployment uploads. Future deployments preserve it.
+
+New feedback assigned to a developer and reassignment to a different developer trigger an email to that developer's saved email address. Ordinary comments, completion, approval, and unchanged assignments do not send another assignment email. The email includes the project, title, comments and a link opening that item. Existing records are not emailed retroactively by deployment.
+
+SMTP delivery occurs after the board save. Missing configuration or a sending failure does not undo feedback; the app displays an explanation. It reports SMTP acceptance, not final inbox delivery. Failed emails are not automatically retried; correct the configuration, then unassign and reassign the relevant item if a new notification is needed. A request sends at most five assignment emails to bound processing time; use individual assignment changes for normal operation.
+
+PHPMailer v7.2.0 is vendored under server/lib/PHPMailer with its LGPL license and version metadata. TLS certificate verification remains enabled. Mailbox credentials and SMTP diagnostics are not returned to app visitors or logged in detail. Verify your sender domain's SPF/DKIM records through cPanel Email Deliverability if messages are accepted but land in spam.

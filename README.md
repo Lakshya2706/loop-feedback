@@ -65,3 +65,7 @@ Code pushes are user-triggered. There is no periodic or automatic code-push proc
 This is a shared workspace without individual sign-in or role enforcement: anyone who can reach the public app can read and edit its contents. Reviewer/Developer labels do not verify identity. Email addresses do not send invitations. Updates from other users appear after refresh. Use HTTPS for the screenshot clipboard and browser APIs. Supported image formats are PNG, JPEG, GIF and WebP up to 8 MB.
 
 The deployment updates individual files, not an atomic whole-directory release. Hashed assets go first and HTML last; previous assets remain for open browser tabs. Server-side `config.php` and database data are never deployed or reset.
+
+## Assignment notifications
+
+New assignments and reassignments can send developer emails through authenticated SSL/TLS SMTP. Optional server-only configuration is described in [deployment setup](docs/DEPLOYMENT.md#assignment-emails-optional-one-time-setup). The mailbox password never enters source control. Failed email delivery leaves feedback saved and displays a warning. PHPMailer 7.2.0 and its license are included in `server/lib/PHPMailer`.

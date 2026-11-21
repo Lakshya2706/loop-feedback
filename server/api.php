@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__.'/notifications.php';
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
 function respond(array $body, int $code = 200): never {
@@ -59,12 +60,15 @@ try {
         if (strlen($raw)>8*1024*1024) respond(['error'=>'Workspace is too large.'],413);
         try {$body=json_decode($raw,true,512,JSON_THROW_ON_ERROR);} catch (JsonException $e) {respond(['error'=>'Invalid JSON.'],400);}
         if (!is_array($body) || !is_string($body['revision']??null) || !valid_board($body['data']??null)) respond(['error'=>'Please check the feedback fields and try again.'],400);
+        $before=current_board($db);
+        if ($before['revision']!==$body['revision']) respond(['error'=>'Someone updated this board. The latest version is loaded; please retry your change.']+$before,409);
         $document=json_encode($body['data'],JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
         $revision=bin2hex(random_bytes(32));
         $stmt=$db->prepare('UPDATE loop_board SET document=?, revision=? WHERE id=1 AND revision=?');
         $stmt->execute([$document,$revision,$body['revision']]);
         if ($stmt->rowCount()!==1) respond(['error'=>'Someone updated this board. The latest version is loaded; please retry your change.']+current_board($db),409);
-        respond(['revision'=>$revision]);
+        $notifications=notify_assignments($before['data'],$body['data']);
+        respond(['revision'=>$revision,'notifications'=>$notifications]);
     }
     if ($route==='upload' && $method==='POST') {
         $bytes=file_get_contents('php://input',false,null,0,8*1024*1024+1);

@@ -1,4 +1,4 @@
 Options -Indexes
-<FilesMatch "^(config(\.example)?\.php|.*\.sql|.*\.zip|.*\.md)$">
+<FilesMatch "^((smtp-)?config(\.example)?\.php|.*\.sql|.*\.zip|.*\.md)$">
     Require all denied
 </FilesMatch>

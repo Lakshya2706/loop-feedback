@@ -44,6 +44,8 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y php-cli php-mysql default-mysql-client
           php -l server/api.php
+          php -l server/notifications.php
+          php tests/notifications.php
           php -r 'file_put_contents("server/config.php", "<?php return " . var_export(["host"=>"127.0.0.1", "database"=>"loop_test", "username"=>"root", "password"=>"local-ci-test-password"], true) . ";");'
           MYSQL_PWD=local-ci-test-password mysql -h 127.0.0.1 -u root loop_test < server/schema.sql
           php -S 127.0.0.1:8000 -t server > /tmp/loop-php.log 2>&1 &
