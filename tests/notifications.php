@@ -19,3 +19,7 @@ $r=notify_assignments($before,$after,$settings,function(){throw new RuntimeExcep
 $r=notify_assignments($before,$after,['enabled'=>false]);expect($r['status']==='not_configured','Disabled SMTP');
 expect(notify_assignments($after,$after,$settings)['status']==='not_needed','No changes require no SMTP connection');
 echo "Assignment email tests passed (mock transport; no real mail sent).\n";
+expect(smtp_error_reason(new RuntimeException('SMTP Error: Could not authenticate.'))==='authentication','Authentication diagnosis');
+expect(smtp_error_reason(new RuntimeException('certificate verify failed'))==='tls','TLS diagnosis');
+expect(smtp_error_reason(new RuntimeException('SMTP connect() failed'))==='connection','Connection diagnosis');
+expect(!str_contains(smtp_reason_message('authentication'),'test-only'),'Safe diagnostic output');

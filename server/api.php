@@ -50,6 +50,7 @@ try {
         $scheme=(!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS']!=='off')?'https':'http';
         if (($origin!=='' && $origin!==$scheme.'://'.($_SERVER['HTTP_HOST']??'')) || ($_SERVER['HTTP_SEC_FETCH_SITE']??'')==='cross-site') respond(['error'=>'Invalid request origin.'],403);
     }
+    if ($route==='email-check' && $method==='GET') respond(smtp_connection_check());
     if (!is_file(__DIR__.'/config.php')) respond(['error'=>'Server setup required: create config.php with your database details.'],503);
     $c=require __DIR__.'/config.php';
     if (!is_array($c) || ($c['password']??'')==='REPLACE_WITH_YOUR_DATABASE_USER_PASSWORD') respond(['error'=>'Enter your database password in config.php.'],503);
