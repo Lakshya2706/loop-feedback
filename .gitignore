@@ -8,3 +8,5 @@ output/
 *.zip
 *.sql.gz
 __pycache__/
+
+/node_modules
