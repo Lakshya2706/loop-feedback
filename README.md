@@ -1,80 +1,67 @@
 # Loop — Screenshot Feedback Board
 
-A focused feedback workspace for reviewing software with developers. Attach a screenshot, describe a change, assign a developer, and keep every reply and review round attached to that feedback.
+A shared feedback workspace for reviewing software with developers. Upload or paste a screenshot, explain a change, assign a developer, and keep every reply and review round in one place.
 
-## The problem
-
-Screenshot feedback gets buried in chat groups. Loop gives each issue a persistent place, an assignee, a discussion, and a clear review cycle:
-
-**Open → Ready for review → Approved**
-
-If a fix needs more work, the reviewer can reopen it with another comment while preserving the discussion history.
+**Open → Ready for review → Approved**, with reopening and discussion history when a fix needs another round.
 
 ## Features
 
-- Project-based feedback boards with platform links.
-- Screenshot uploads through file selection, drag and drop, and clipboard paste.
-- Mac clipboard workflow: Control + Shift + Command + 4, select an area, then paste with Command + V.
-- Developer directory with names and email addresses.
-- Assignment, search, and filters for developer and status.
-- Developer replies, follow-up comments, and status history.
-- Shared server-side records and screenshot files using Cloudflare R2.
-- Conditional writes using ETags to detect concurrent edits.
-- Responsive layout and keyboard-accessible dialogs.
-- A sample workspace for exploring the interface without creating real records.
+- Screenshot file uploads, drag and drop, and clipboard paste (including the Mac clipboard screenshot workflow).
+- Separate projects and platform links.
+- Developer names/emails, assignment, search, and status filters.
+- Discussion history and a complete done/review/reopen/approve cycle.
+- Shared MySQL storage for feedback and screenshot bytes.
+- Revision checks that reject conflicting saves.
+- Responsive interface and keyboard-accessible dialogs.
 
 ## Stack
 
-React 19, Vite 6, JavaScript, CSS, Lucide icons, Cloudflare Workers, and Cloudflare R2. Node’s built-in test runner verifies input handling and backend behavior.
+React 19, Vite 6, JavaScript, CSS, Lucide icons, PHP 8.3, MySQL/MariaDB, and GitHub Actions. Built with AI-assisted development from a practical client/developer review workflow.
 
-## Run locally
+This repository now contains the PHP/MySQL version used on cPanel. Earlier Cloudflare code remains in Git history. Production feedback, screenshot files, database passwords and deployment credentials are not in this repository.
 
-Requires Node.js 20.19+ or 22.12+.
+## Local development
+
+Requires Node.js 22, PHP 8.3 with `pdo_mysql` and `fileinfo`, and MySQL/MariaDB.
+
+1. Run `npm ci`.
+2. Create your own local database and import `server/schema.sql`.
+3. Copy `server/config.example.php` to `server/config.php` and enter your local database credentials. The real file is ignored by Git.
+4. Start `php -S 127.0.0.1:8000 -t server`.
+5. In another terminal run `npm run dev`. Vite proxies the API to the PHP process.
+
+## Tests and build
 
 ```bash
-npm ci
-npm run dev
-```
-
-Open the URL printed by Vite. The preview API uses a local file-backed storage adapter; it does not connect to the original live workspace. The sample board is interactive demonstration data. Create a project to save local records.
-
-## Verify and build
-
-```bash
-node --test tests/*.test.mjs
+npm test
+python3 -m unittest discover -s tests -p '*_test.py'
+php -l server/api.php
 npm run build
 ```
 
-The build emits the frontend in `dist/` and a self-contained Worker at `dist/server/index.js`.
+`tests/php-integration.php` needs a dedicated empty test database and the PHP server on port 8000. It creates test records, so never run it against production. GitHub Actions provisions an isolated MySQL service for these tests.
 
-## Architecture
+The build creates `dist/` with `index.html`, hashed `assets/`, `api.php`, `.htaccess`, and `.user.ini`. No database configuration or SQL import is packaged.
 
-| File | Responsibility |
-| --- | --- |
-| `src/main.jsx` | Application state, shared persistence, and view composition |
-| `src/Board.jsx` | Five-column feedback table, project selection, search, and filters |
-| `src/Detail.jsx` | Discussion history and review actions |
-| `src/Forms.jsx` | Feedback, project, and developer forms |
-| `src/components.jsx` | Reusable shell, dialogs, screenshot input, and visual primitives |
-| `src/screenshot-input.js` | File/clipboard transfer extraction and image validation |
-| `worker.js` | Shared board and image endpoints |
-| `vite.config.js` | Local-only storage adapter |
-| `build-worker.mjs` | Packages frontend assets into the Worker |
+## BigRock deployment
 
-The Worker stores records in `workspace/board.json` and image objects under `images/`. Existing R2 data is separate from application source and build artifacts.
+See [deployment setup](docs/DEPLOYMENT.md). A push to `main` or a manual workflow run builds, tests, and deploys via encrypted FTPS once the hosting secrets are configured. Missing secrets cause deployment to be skipped with an explanatory notice; tests still run.
 
-## Deploy your own instance
+Code pushes are user-triggered. There is no periodic or automatic code-push process. Deployment automation reacts only to the configured GitHub events.
 
-Use your own Cloudflare Worker with an R2 binding named `BUCKET`, or create a new Sites project and configure its own identity in `.openai/hosting.json`. This repository intentionally excludes the original deployment identity and all live feedback data. Never reuse another workspace’s bucket or credentials.
+## Architecture and data
 
-Register a Sites project before deploying through Sites, then add its returned `project_id` to `.openai/hosting.json`. Alternatively, configure your own Cloudflare Worker deployment around `dist/server/index.js` and an R2 bucket bound as `BUCKET`. Deployment configuration and secrets belong to your own environment.
+- `src/Board.jsx`: screenshot/feedback/assignee/reply/status table and filters.
+- `src/Detail.jsx`: discussion, completion, approval, and reopening.
+- `src/Forms.jsx`, `src/components.jsx`: forms, reusable controls, dialogs, screenshot input.
+- `server/api.php`: JSON board and image endpoints.
+- `server/schema.sql`: initial empty schema for a new installation only.
+- `scripts/deploy-ftps.py`: explicit allowlist, encrypted transfer and per-file publish.
 
-## Access model and current limitations
+`loop_board` stores the workspace JSON and revision; `loop_images` stores image bytes. Database backups capture both. Routine application deployment does not access the database. Future schema changes require an explicit migration and a backup, rather than reimporting an old snapshot.
 
-This version is a shared workspace: anyone permitted to open the app can read and edit its records. It does not implement individual user authentication, role enforcement, or email invitations. The Reviewer/Developer comment selector is a display label, not verified identity. A public deployment allows anonymous edits. Add authentication and authorization before using an instance for confidential information or restricted teams.
+## Current access model and limitations
 
-Updates from other users appear after refresh; live subscriptions are not implemented. File validation supports PNG, JPEG, GIF, and WebP up to 8 MB. Native macOS screenshot-thumbnail dragging should be verified on the target Mac/browser combination; clipboard paste is also supported.
+This is a shared workspace without individual sign-in or role enforcement: anyone who can reach the public app can read and edit its contents. Reviewer/Developer labels do not verify identity. Email addresses do not send invitations. Updates from other users appear after refresh. Use HTTPS for the screenshot clipboard and browser APIs. Supported image formats are PNG, JPEG, GIF and WebP up to 8 MB.
 
-## Project context
-
-Built with AI-assisted development to turn a practical client/developer communication workflow into a working web application. This repository contains the application source and tests, not uploaded client screenshots or production data.
+The deployment updates individual files, not an atomic whole-directory release. Hashed assets go first and HTML last; previous assets remain for open browser tabs. Server-side `config.php` and database data are never deployed or reset.

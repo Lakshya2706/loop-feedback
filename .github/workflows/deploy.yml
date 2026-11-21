@@ -1,0 +1,73 @@
+name: Test and deploy to BigRock
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bigrock-production
+  cancel-in-progress: false
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: local-ci-test-password
+          MYSQL_DATABASE: loop_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -plocal-ci-test-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Test deployment safeguards
+        run: python3 -m unittest discover -s tests -p '*_test.py'
+      - name: Prepare PHP tests
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y php-cli php-mysql default-mysql-client
+          php -l server/api.php
+          php -r 'file_put_contents("server/config.php", "<?php return " . var_export(["host"=>"127.0.0.1", "database"=>"loop_test", "username"=>"root", "password"=>"local-ci-test-password"], true) . ";");'
+          MYSQL_PWD=local-ci-test-password mysql -h 127.0.0.1 -u root loop_test < server/schema.sql
+          php -S 127.0.0.1:8000 -t server > /tmp/loop-php.log 2>&1 &
+      - name: Test PHP storage and review workflow
+        run: php tests/php-integration.php
+      - name: Build deployable files
+        run: npm run build
+      - name: Check hosting credentials
+        id: credentials
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          if [ -n "$FTP_HOST" ] && [ -n "$FTP_USERNAME" ] && [ -n "$FTP_PASSWORD" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Build passed. Deployment skipped until FTP_HOST, FTP_USERNAME and FTP_PASSWORD repository secrets are set."
+          fi
+      - name: Deploy over encrypted FTPS
+        if: steps.credentials.outputs.ready == 'true'
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: python3 scripts/deploy-ftps.py

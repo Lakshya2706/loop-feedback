@@ -2,3 +2,9 @@ node_modules/
 dist/
 .env*
 *.tar.gz
+server/config.php
+config.php
+output/
+*.zip
+*.sql.gz
+__pycache__/
