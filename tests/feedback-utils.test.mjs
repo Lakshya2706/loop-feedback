@@ -17,3 +17,8 @@ test('selected person determines role and attribution for new comments',()=>{
  assert.deepEqual(personComment({id:'a',name:'Alice',kind:'developer'},' Done ','c','date'),{id:'c',role:'Developer',authorId:'a',authorName:'Alice',text:'Done',at:'date'});
  assert.equal(personComment({id:'admin',name:'Admin',kind:'admin'},'Check','c','date').role,'Reviewer');
 });
+test('newest feedback appears first without mutating storage or reordering undated items',()=>{
+ const items=[{id:'old',createdAt:'2026-11-20T12:00:00Z'},{id:'legacy1'},{id:'new',createdAt:'2026-11-26T12:00:00Z'},{id:'legacy2',createdAt:'invalid'}].map(i=>({...i,project:'p',status:'Open',title:'Feedback',comment:''}));
+ assert.deepEqual(filterFeedback(items,{project:'p'}).map(i=>i.id),['new','old','legacy1','legacy2']);
+ assert.deepEqual(items.map(i=>i.id),['old','legacy1','new','legacy2']);
+});
