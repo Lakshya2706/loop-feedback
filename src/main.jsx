@@ -5,9 +5,12 @@ import Board from'./Board';
 import{FeedbackForm,ProjectForm,Developers}from'./Forms';
 import Detail from'./Detail';
 import{PersonPicker,ProjectMenu,Toast}from'./Workspace';
+import LogoIntro from './LogoIntro';
 import{sample,empty}from'./data';
 import './styles.css';
 function App(){
+  const [introDone,setIntroDone]=useState(()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const finishIntro=useCallback(()=>setIntroDone(true),[]);
   const[data,setData]=useState(empty),[revision,setRevision]=useState(''),[project,setProject]=useState('sample'),[page,setPage]=useState('Feedback'),[modal,setModal]=useState(null),[selected,setSelected]=useState(()=>new URLSearchParams(window.location.search).get('feedback')),[person,setPerson]=useState(null),[busy,setBusy]=useState(false),[toast,setToast]=useState(null),[loaded,setLoaded]=useState(false),[loadError,setLoadError]=useState(''),[demo,setDemo]=useState(true),[demoData,setDemoData]=useState(()=>structuredClone(sample));
   const view=demo?demoData:data;
   const notify=useCallback((message,type='success')=>setToast({id:crypto.randomUUID(),message,type}),[]);
@@ -52,6 +55,7 @@ function App(){
   }
   const selectedItem=view.items.find(i=>i.id===selected);
   const openFeedback=()=>setModal(demo?'project':'feedback');
+  if(!introDone)return <LogoIntro onComplete={finishIntro}/>;
   if(!activePerson)return <><PersonPicker developers={data.developers} loading={!loaded} error={loadError} onRetry={load} onChoose={chosen=>{setPerson(chosen);notify('Welcome, '+chosen.name+'.');}}/><Toast toast={toast} onClose={closeToast}/></>;
   return <Shell page={page} setPage={setPage} person={activePerson} onSwitchPerson={()=>{setPerson(null);setModal(null);}} onValidation={message=>notify(message,'error')} projectMenu={<ProjectMenu projects={view.projects} project={project} onSelect={id=>{setProject(id);setPage('Feedback');notify('Project changed.');}} onCreate={()=>setModal('project')}/>}>
     {page==='Feedback'?<Board data={view} project={project} onNew={openFeedback} onDetail={setSelected} busy={busy} onAssign={(id,developer)=>{const name=view.developers.find(d=>d.id===developer)?.name;updateItem({...view.items.find(i=>i.id===id),developer},name?'Assigned to '+name+'.':'Developer unassigned.');}}/>:<Developers data={view} busy={busy} onSave={async developer=>{
