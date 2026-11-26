@@ -22,11 +22,11 @@ $png=base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8
 $doc['items'][]=['id'=>'qa-item','project'=>'qa-project','title'=>'Fix button spacing','comment'=>'Add space','developer'=>'qa-dev','image'=>$image,'status'=>'Open','thread'=>[]];
 foreach(['Open','Ready for review','Open','Ready for review','Approved'] as $status){
     $doc['items'][0]['status']=$status;
-    $doc['items'][0]['thread'][]=['role'=>'Reviewer','text'=>'Review round','at'=>date('c')];
+    $doc['items'][0]['thread'][]=['role'=>'Developer','authorId'=>'qa-dev','authorName'=>'Example Developer','text'=>'Review round','at'=>date('c')];
     $previous=$revision;
     [$code,$raw]=request_api('board','PUT',['data'=>$doc,'revision'=>$revision]);check($code===200,'Save '.$status.': '.$raw);$revision=json_decode($raw,true)['revision'];
     [$code]=request_api('board','PUT',['data'=>$doc,'revision'=>$previous]);check($code===409,'Stale write rejected');
 }
-[$code,$raw]=request_api('board');$saved=json_decode($raw,true);check($saved['data']['items'][0]['status']==='Approved','Saved approval');check(count($saved['data']['items'][0]['thread'])===5,'Saved discussion history');
+[$code,$raw]=request_api('board');$saved=json_decode($raw,true);check($saved['data']['items'][0]['status']==='Approved','Saved approval');check(count($saved['data']['items'][0]['thread'])===5,'Saved discussion history');check($saved['data']['items'][0]['thread'][0]['authorName']==='Example Developer','Comment author metadata preserved');
 $invalid=$doc;$invalid['items'][0]['image']='https://other.test/image.png';[$code]=request_api('board','PUT',['data'=>$invalid,'revision'=>$revision]);check($code===400,'Invalid image URL rejected');
 echo "PHP/MySQL integration passed: persistence, PNG upload, exact bytes, review/reopen history, stale writes, validation and origins.\n";
