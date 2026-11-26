@@ -1,0 +1,12 @@
+import React,{useState,useRef,useEffect} from 'react';
+import {createPortal} from 'react-dom';
+import {latestReply} from './feedback-utils';
+export default function ReplyPreview({item,onOpen}){
+ const [position,setPosition]=useState(null),trigger=useRef(null),timer=useRef(null);
+ const comments=(item.thread||[]).filter(e=>e.role!=='Activity'&&e.text?.trim()),reply=latestReply(item);
+ const close=()=>{timer.current=setTimeout(()=>setPosition(null),140);};
+ const keep=()=>clearTimeout(timer.current);
+ const show=()=>{keep();if(!comments.length)return;const r=trigger.current.getBoundingClientRect(),width=Math.min(360,window.innerWidth-24),height=Math.min(320,window.innerHeight-24);setPosition({left:Math.max(12,Math.min(r.left,window.innerWidth-width-12)),top:r.top>height+12?r.top-height-8:Math.min(r.bottom+8,window.innerHeight-height-12),width,height});};
+ useEffect(()=>{const hide=e=>{if(e?.target?.closest?.('.reply-history-popover'))return;setPosition(null);},escape=e=>{if(e.key==='Escape')hide();};window.addEventListener('scroll',hide,true);window.addEventListener('resize',hide);window.addEventListener('keydown',escape);return()=>{clearTimeout(timer.current);window.removeEventListener('scroll',hide,true);window.removeEventListener('resize',hide);window.removeEventListener('keydown',escape);};},[]);
+ return <><button ref={trigger} className="reply-preview" onMouseEnter={show} onMouseLeave={close} onFocus={show} onBlur={close} onClick={onOpen} aria-label={'Open discussion for '+item.title}>{reply?<><span className="reply-author">Latest discussion · {comments.at(-1).authorName||comments.at(-1).role}</span><span className="reply-excerpt">{comments.at(-1).text}</span></>:<span className="muted">No reply yet<br/><span className="reply-link">Open discussion</span></span>}</button>{position&&createPortal(<section className="reply-history-popover" aria-label={'Replies for '+item.title} style={{left:position.left,top:position.top,width:position.width,height:position.height}} onMouseEnter={keep} onMouseLeave={close}><strong>Discussion · {comments.length} {comments.length===1?'reply':'replies'}</strong><div className="reply-history-list">{comments.map((entry,i)=><article key={entry.id||i}><header><b>{entry.authorName||entry.role}</b><time>{entry.at?new Date(entry.at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):''}</time></header><p>{entry.text}</p></article>)}</div><button className="text-button" onClick={onOpen}>Open discussion</button></section>,document.body)}</>;
+}
