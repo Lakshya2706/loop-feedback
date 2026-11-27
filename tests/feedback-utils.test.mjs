@@ -22,3 +22,9 @@ test('newest feedback appears first without mutating storage or reordering undat
  assert.deepEqual(filterFeedback(items,{project:'p'}).map(i=>i.id),['new','old','legacy1','legacy2']);
  assert.deepEqual(items.map(i=>i.id),['old','legacy1','new','legacy2']);
 });
+test('priority ranks before creation time and supports combined priority/platform filters',()=>{
+ const items=[{id:'p2-new',priority:'P2',createdAt:'2026-11-27T12:00:00Z'},{id:'p1-old',priority:'P1',createdAt:'2026-11-20T12:00:00Z'},{id:'p3',priority:'P3',createdAt:'2026-11-28T12:00:00Z'},{id:'p1-new',priority:'P1',createdAt:'2026-11-27T12:00:00Z'},{id:'legacy',createdAt:'2026-11-26T12:00:00Z'}].map(i=>({...i,platform:'crm',project:'p',status:'Open',title:'Feedback',comment:''}));
+ assert.deepEqual(filterFeedback(items,{project:'p'}).map(i=>i.id),['p1-new','p1-old','p2-new','legacy','p3']);
+ assert.deepEqual(filterFeedback(items,{project:'p',priority:'P1',platform:'crm'}).map(i=>i.id),['p1-new','p1-old']);
+ assert.equal(filterFeedback(items,{project:'p',platform:'other'}).length,0);
+});

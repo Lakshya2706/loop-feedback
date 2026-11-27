@@ -29,4 +29,11 @@ foreach(['Open','Ready for review','Open','Ready for review','Approved'] as $sta
 }
 [$code,$raw]=request_api('board');$saved=json_decode($raw,true);check($saved['data']['items'][0]['status']==='Approved','Saved approval');check(count($saved['data']['items'][0]['thread'])===5,'Saved discussion history');check($saved['data']['items'][0]['thread'][0]['authorName']==='Example Developer','Comment author metadata preserved');
 $invalid=$doc;$invalid['items'][0]['image']='https://other.test/image.png';[$code]=request_api('board','PUT',['data'=>$invalid,'revision'=>$revision]);check($code===400,'Invalid image URL rejected');
+$doc['platforms']=[['id'=>'crm','product'=>'qa-project','name'=>'CRM']];
+$doc['items'][0]['platform']='crm';$doc['items'][0]['priority']='P1';$doc['items'][0]['title']='Edited feedback';
+[$code,$raw]=request_api('board','PUT',['data'=>$doc,'revision'=>$revision]);check($code===200,'Save platform, priority and feedback edit');$revision=json_decode($raw,true)['revision'];
+[$code,$raw]=request_api('board');$updated=json_decode($raw,true)['data'];check($updated['items'][0]['priority']==='P1'&&$updated['items'][0]['platform']==='crm','Priority and platform persisted');check(count($updated['items'][0]['thread'])===5&&$updated['items'][0]['image']===$image,'Editing preserves image and discussion');
+$invalid=$doc;$invalid['items'][0]['priority']='P4';[$code]=request_api('board','PUT',['data'=>$invalid,'revision'=>$revision]);check($code===400,'Invalid priority rejected');
+$invalid=$doc;$invalid['items'][0]['platform']='missing';[$code]=request_api('board','PUT',['data'=>$invalid,'revision'=>$revision]);check($code===400,'Invalid project/platform rejected');
+$doc['platforms']=[];$doc['items'][0]['platform']='';[$code,$raw]=request_api('board','PUT',['data'=>$doc,'revision'=>$revision]);check($code===200,'Removing platform keeps feedback');
 echo "PHP/MySQL integration passed: persistence, PNG upload, exact bytes, review/reopen history, stale writes, validation and origins.\n";

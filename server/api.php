@@ -22,12 +22,22 @@ function valid_board(mixed $d): bool {
         if (!is_array($p) || !text_value($p['id']??null,80,true) || !text_value($p['name']??null,120,true) || !text_value($p['url']??null,2048) || ($p['url'] !== '' && !preg_match('~^https?://~i',$p['url'])) || isset($projects[$p['id']])) return false;
         $projects[$p['id']] = true;
     }
+    $platforms = [];
+    if (isset($d['platforms'])) {
+        if (!is_array($d['platforms']) || !array_is_list($d['platforms']) || count($d['platforms']) > 1500) return false;
+        foreach ($d['platforms'] as $p) {
+            if (!is_array($p) || !text_value($p['id']??null,80,true) || !text_value($p['name']??null,120,true) || !is_string($p['product']??null) || !isset($projects[$p['product']]) || isset($platforms[$p['id']])) return false;
+            $platforms[$p['id']] = $p['product'];
+        }
+    }
     foreach ($d['developers'] as $p) {
         if (!is_array($p) || !text_value($p['id']??null,80,true) || !text_value($p['name']??null,100,true) || !text_value($p['email']??null,254,true) || !filter_var($p['email'],FILTER_VALIDATE_EMAIL) || isset($devs[$p['id']])) return false;
         $devs[$p['id']] = true;
     }
     foreach ($d['items'] as $i) {
         if (!is_array($i) || !text_value($i['id']??null,80,true) || isset($ids[$i['id']]) || !is_string($i['project']??null) || !isset($projects[$i['project']]) || !text_value($i['title']??null,160,true) || !text_value($i['comment']??null,10000) || !is_string($i['developer']??null) || ($i['developer'] !== '' && !isset($devs[$i['developer']])) || !in_array($i['status']??null,['Open','Ready for review','Approved'],true) || !isset($i['thread']) || !is_array($i['thread']) || !array_is_list($i['thread']) || count($i['thread']) >= 2000) return false;
+        if (isset($i['priority']) && !in_array($i['priority'],['P1','P2','P3'],true)) return false;
+        if (isset($i['platform']) && (!is_string($i['platform']) || ($i['platform'] !== '' && ($platforms[$i['platform']]??null) !== $i['project']))) return false;
         if (!empty($i['image']) && (!is_string($i['image']) || !preg_match('~^api\.php\?route=images/[a-f0-9-]{36}$~D',$i['image']))) return false;
         foreach ($i['thread'] as $t) {
             if (!is_array($t) || !in_array($t['role']??null,['Reviewer','Developer','Activity'],true) || !text_value($t['text']??null,10000) || !text_value($t['at']??null,100,true)) return false;

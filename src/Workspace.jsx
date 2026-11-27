@@ -9,8 +9,8 @@ export function usePopover() {
 export function ProjectMenu({projects,project,onSelect,onCreate}) {
   const {open,setOpen,ref}=usePopover(); const current=projects.find(p=>p.id===project);
   return <div className="project-switcher" ref={ref}>
-    {open&&<div className="project-popover" role="menu" aria-label="Projects"><div className="popover-heading">Projects / Platforms</div><div className="project-options">{projects.map(p=><button key={p.id} role="menuitemradio" aria-checked={p.id===project} onClick={()=>{onSelect(p.id);setOpen(false);}}><Folder size={17}/><span>{p.name}{p.sample?' (sample)':''}</span>{p.id===project&&<Check size={16}/>}</button>)}</div><button role="menuitem" className="create-project-option" onClick={()=>{setOpen(false);onCreate();}}><Plus size={17}/>Project / Platform</button></div>}
-    <button className="project-menu-trigger" aria-label={'Projects: '+(current?.name||'Select project')} aria-haspopup="menu" aria-expanded={open} onClick={()=>setOpen(!open)}><Folder size={19}/><span>{current?.name||'Project / Platform'}</span><ChevronUp size={17} className={open?'expanded':''}/></button>
+    {open&&<div className="project-popover" role="menu" aria-label="Products"><div className="popover-heading">Products</div><div className="project-options">{projects.map(p=><button key={p.id} role="menuitemradio" aria-checked={p.id===project} onClick={()=>{onSelect(p.id);setOpen(false);}}><Folder size={17}/><span>{p.name}{p.sample?' (sample)':''}</span>{p.id===project&&<Check size={16}/>}</button>)}</div><button role="menuitem" className="create-project-option" onClick={()=>{setOpen(false);onCreate();}}><Plus size={17}/>Product</button></div>}
+    <button className="project-menu-trigger" aria-label={'Products: '+(current?.name||'Select product')} aria-haspopup="menu" aria-expanded={open} onClick={()=>setOpen(!open)}><Folder size={19}/><span>{current?.name||'Product'}</span><ChevronUp size={17} className={open?'expanded':''}/></button>
   </div>;
 }
 export function PersonPicker({developers,onChoose,loading,error,onRetry}) {
